@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "jayshahde/devops-monitoring-app"
+        IMAGE_NAME = "jayshahade/devops-monitoring-app"
+        CONTAINER_NAME = "flask-app"
     }
 
     stages {
@@ -15,7 +16,9 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:$BUILD_NUMBER .'
+                sh '''
+                docker build -t $IMAGE_NAME:$BUILD_NUMBER .
+                '''
             }
         }
 
@@ -37,7 +40,14 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push $IMAGE_NAME:$BUILD_NUMBER'
+
+                sh '''
+                docker push $IMAGE_NAME:$BUILD_NUMBER
+
+                docker tag $IMAGE_NAME:$BUILD_NUMBER $IMAGE_NAME:latest
+
+                docker push $IMAGE_NAME:latest
+                '''
             }
         }
 
@@ -45,11 +55,11 @@ pipeline {
             steps {
 
                 sh '''
-                docker stop flask-app || true
-                docker rm flask-app || true
+                docker stop $CONTAINER_NAME || true
+                docker rm $CONTAINER_NAME || true
 
                 docker run -d \
-                --name flask-app \
+                --name $CONTAINER_NAME \
                 -p 5000:5000 \
                 $IMAGE_NAME:$BUILD_NUMBER
                 '''
