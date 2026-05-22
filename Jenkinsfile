@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "YOUR_DOCKERHUB_USERNAME/flask-devops-app"
+        IMAGE_NAME = "jayshahde/devops-monitoring-app"
     }
 
     stages {
 
         stage('Clone Repository') {
             steps {
-                echo 'Cloning repository...'
+                echo 'Cloning GitHub repository...'
             }
         }
 
@@ -21,6 +21,7 @@ pipeline {
 
         stage('Docker Login') {
             steps {
+
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
                     usernameVariable: 'DOCKER_USER',
@@ -53,6 +54,23 @@ pipeline {
                 $IMAGE_NAME:$BUILD_NUMBER
                 '''
             }
+        }
+
+        stage('Show Running Containers') {
+            steps {
+                sh 'docker ps'
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
