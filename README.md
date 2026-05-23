@@ -116,11 +116,3 @@ docker run -d --name grafana -p 4000:4000 grafana/grafana
 * **Dashboard Focus:** Preconfigured to observe CPU utilization spikes, total RAM allocation consumption trends, and continuous network packet data movement over time.
 
 ---
-
-## 📑 Interview Submission Deliverables
-
-* **GitHub Repository:** `https://github.com<your-username>/devops-cicd-assignment`
-* **Dockerfile Location:** `/Dockerfile`
-* **Pipeline Infrastructure Specification:** `/Jenkinsfile`
-* **Live Application Production Endpoint:** `http://<your-ec2-public-ip>:3000`
-* **Live Monitoring Platform Endpoint:** `http://<your-ec2-public-ip>:4000`
