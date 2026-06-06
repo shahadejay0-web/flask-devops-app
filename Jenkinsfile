@@ -51,10 +51,18 @@ pipeline {
         stage('Deploy to Worker') {
             steps {
                  sh '''
-                 docker-compose down || true
-                 docker-compose pull || true
-                 docker-compose up -d --build
+                 echo "Deploying application using docker compose..."
 
+                 # go to correct workspace
+                 cd $WORKSPACE
+
+                 # stop old containers
+                 docker compose down || true
+
+                 # start new stack
+                 docker compose up -d --build
+
+                 # verify
                  docker ps
                  '''
             }
