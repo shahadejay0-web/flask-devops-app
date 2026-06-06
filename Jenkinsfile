@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         IMAGE_NAME = "jayshahade/devops-monitoring-app"
-        CONTAINER_NAME = "flask-app"
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
@@ -11,6 +10,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
+                echo "Checking out source code..."
                 checkout scm
             }
         }
@@ -39,28 +39,35 @@ pipeline {
             }
         }
 
-        stage('Push Image to Docker Hub') {
+        stage('Push Image') {
             steps {
                 sh """
-                echo "Pushing images..."
+                echo "Pushing Docker images..."
                 docker push $IMAGE_NAME:$IMAGE_TAG
                 docker push $IMAGE_NAME:latest
                 """
             }
         }
 
-        stage('Deploy Application') {
+        stage('Deploy Stack (Docker Compose)') {
             steps {
                 sh """
-                echo "Stopping old container if exists..."
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
+                echo "Deploying monitoring stack using docker compose..."
 
-                echo "Running new container..."
-                docker run -d \
-                    --name $CONTAINER_NAME \
-                    -p 5000:5000 \
-                    $IMAGE_NAME:$IMAGE_TAG
+                # Use Jenkins workspace (IMPORTANT FIX)
+                cd $WORKSPACE
+
+                # Stop old stack
+                docker compose down || true
+
+                # Pull latest images
+                docker compose pull || true
+
+                # Start stack
+                docker compose up -d --build
+
+                echo "Containers running:"
+                docker ps
                 """
             }
         }
@@ -68,8 +75,18 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh """
-                echo "Checking running containers..."
+                echo "Checking service status..."
+
                 docker ps
+
+                echo "Flask App:"
+                curl -s http://localhost:5000 || true
+
+                echo "Prometheus:"
+                curl -s http://localhost:9090 || true
+
+                echo "Grafana:"
+                curl -s http://localhost:3000 || true
                 """
             }
         }
@@ -77,11 +94,11 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline SUCCESS: Application deployed successfully 🚀"
+            echo "✅ Pipeline SUCCESS: Full monitoring stack deployed!"
         }
 
         failure {
-            echo "Pipeline FAILED ❌ Check logs"
+            echo "❌ Pipeline FAILED: Check logs for errors"
         }
     }
 }
