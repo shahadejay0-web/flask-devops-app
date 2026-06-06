@@ -50,15 +50,15 @@ pipeline {
 
         stage('Deploy to Worker') {
             steps {
-                sh """
-                cd ${APP_DIR}
+                 sh '''
+                 echo "Deploying using docker-compose in Jenkins workspace..."
 
-                docker compose down || true
+                 docker compose down || true
 
-                docker compose pull
+                 docker compose pull || true
 
-                docker compose up -d
-                """
+                 docker compose up -d --build
+                 '''
             }
         }
 
