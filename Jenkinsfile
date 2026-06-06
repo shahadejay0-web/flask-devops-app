@@ -51,24 +51,26 @@ pipeline {
 
         stage('Deploy Stack (Docker Compose)') {
             steps {
-                sh """
-                echo "Deploying monitoring stack using docker compose..."
+                sh '''
+                echo "Deploying monitoring stack..."
 
-                # Use Jenkins workspace (IMPORTANT FIX)
                 cd $WORKSPACE
 
-                # Stop old stack
-                docker compose down || true
+        # fallback-safe compose detection
+        if docker compose version > /dev/null 2>&1
+        then
+            docker compose down || true
+            docker compose pull || true
+            docker compose up -d --build
+        else
+            echo "docker compose not available, trying docker-compose"
+            docker-compose down || true
+            docker-compose pull || true
+            docker-compose up -d --build
+        fi
 
-                # Pull latest images
-                docker compose pull || true
-
-                # Start stack
-                docker compose up -d --build
-
-                echo "Containers running:"
-                docker ps
-                """
+        docker ps
+        '''
             }
         }
 
