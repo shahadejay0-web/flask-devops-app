@@ -3,34 +3,35 @@ pipeline {
 
     environment {
         IMAGE_NAME = "jayshahade/devops-monitoring-app"
-        CONTAINER_NAME = "flask-app"
+        APP_DIR = "/home/ubuntu/flask-devops-app"
     }
 
     stages {
 
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                echo 'Cloning GitHub repository...'
+                checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                docker build -t $IMAGE_NAME:$BUILD_NUMBER .
-                '''
+                sh """
+                docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
+                """
             }
         }
 
         stage('Docker Login') {
             steps {
-
-                withCredentials([usernamePassword(
-                    credentialsId: 'docker-hub-cred',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-hub-cred',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
                     sh '''
                     echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                     '''
@@ -38,37 +39,34 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Image') {
             steps {
-
-                sh '''
-                docker push $IMAGE_NAME:$BUILD_NUMBER
-
-                docker tag $IMAGE_NAME:$BUILD_NUMBER $IMAGE_NAME:latest
-
-                docker push $IMAGE_NAME:latest
-                '''
+                sh """
+                docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                docker push ${IMAGE_NAME}:latest
+                """
             }
         }
 
-        stage('Deploy Container') {
+        stage('Deploy to Worker') {
             steps {
+                sh """
+                cd ${APP_DIR}
 
-                sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
+                docker compose down || true
 
-                docker run -d \
-                --name $CONTAINER_NAME \
-                -p 5000:5000 \
-                $IMAGE_NAME:$BUILD_NUMBER
-                '''
+                docker compose pull
+
+                docker compose up -d
+                """
             }
         }
 
-        stage('Show Running Containers') {
+        stage('Verify Deployment') {
             steps {
-                sh 'docker ps'
+                sh '''
+                docker ps
+                '''
             }
         }
     }
@@ -76,11 +74,11 @@ pipeline {
     post {
 
         success {
-            echo 'Pipeline executed successfully!'
+            echo 'Deployment Successful'
         }
 
         failure {
-            echo 'Pipeline failed!'
+            echo 'Deployment Failed'
         }
     }
 }
