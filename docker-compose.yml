@@ -3,7 +3,7 @@ version: '3.9'
 services:
 
   flask-app:
-    build: .
+    image: jayshahade/devops-monitoring-app
     container_name: flask-app
     ports:
       - "5000:5000"
