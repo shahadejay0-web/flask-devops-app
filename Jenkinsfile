@@ -53,11 +53,11 @@ pipeline {
                  sh '''
                  echo "Deploying using docker-compose in Jenkins workspace..."
 
-                 docker compose down || true
+                 docker-compose down || true
 
-                 docker compose pull || true
+                 docker-compose pull || true
 
-                 docker compose up -d --build
+                 docker-compose up -d --build
                  '''
             }
         }
