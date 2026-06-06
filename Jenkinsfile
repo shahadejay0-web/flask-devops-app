@@ -3,12 +3,13 @@ pipeline {
 
     environment {
         IMAGE_NAME = "jayshahade/devops-monitoring-app"
-        APP_DIR = "/home/ubuntu/flask-devops-app"
+        CONTAINER_NAME = "flask-app"
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 checkout scm
             }
@@ -17,74 +18,70 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh """
-                docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
-                docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
+                echo "Building Docker image..."
+                docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
                 """
             }
         }
 
         stage('Docker Login') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'docker-hub-cred',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
-                    sh '''
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-cred',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
                     echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    '''
+                    """
                 }
             }
         }
 
-        stage('Push Image') {
+        stage('Push Image to Docker Hub') {
             steps {
                 sh """
-                docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-                docker push ${IMAGE_NAME}:latest
+                echo "Pushing images..."
+                docker push $IMAGE_NAME:$IMAGE_TAG
+                docker push $IMAGE_NAME:latest
                 """
             }
         }
 
-        stage('Deploy to Worker') {
+        stage('Deploy Application') {
             steps {
-                 sh '''
-                 echo "Deploying application using docker compose..."
+                sh """
+                echo "Stopping old container if exists..."
+                docker stop $CONTAINER_NAME || true
+                docker rm $CONTAINER_NAME || true
 
-                 # go to correct workspace
-                 cd $WORKSPACE
-
-                 # stop old containers
-                 docker compose down || true
-
-                 # start new stack
-                 docker compose up -d --build
-
-                 # verify
-                 docker ps
-                 '''
+                echo "Running new container..."
+                docker run -d \
+                    --name $CONTAINER_NAME \
+                    -p 5000:5000 \
+                    $IMAGE_NAME:$IMAGE_TAG
+                """
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                sh '''
+                sh """
+                echo "Checking running containers..."
                 docker ps
-                '''
+                """
             }
         }
     }
 
     post {
-
         success {
-            echo 'Deployment Successful'
+            echo "Pipeline SUCCESS: Application deployed successfully 🚀"
         }
 
         failure {
-            echo 'Deployment Failed'
+            echo "Pipeline FAILED ❌ Check logs"
         }
     }
 }
