@@ -2,3 +2,4 @@ prometheus_client
 Flask
 prometheus_client
 gunicorn
+prometheus-flask-exporter
