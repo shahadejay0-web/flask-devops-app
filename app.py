@@ -8,7 +8,7 @@ REQUEST_COUNT = Counter('app_requests_total', 'Total Requests')
 @app.route("/")
 def home():
     REQUEST_COUNT.inc()
-    return "index.htmal"
+    return "Hellow DevOps"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
