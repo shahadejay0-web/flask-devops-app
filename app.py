@@ -1,14 +1,13 @@
-from prometheus_client import start_http_server, Counter
 from flask import Flask
+from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
 
-REQUEST_COUNT = Counter('app_requests_total', 'Total Requests')
+metrics = PrometheusMetrics(app)
 
 @app.route("/")
 def home():
-    REQUEST_COUNT.inc()
-    return "Hellow DevOps"
+    return "Flask DevOps Monitoring App Running"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
